@@ -1,0 +1,165 @@
+name: InstallMySQLPHPComponent
+description: Installs MySQL and PHP on Linux
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: UpdateSystem
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf update -y
+            - sudo dnf upgrade -y
+
+      - name: InstallMySQLServer
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf install -y mysql-server
+            - sudo systemctl enable mysqld
+            - sudo systemctl start mysqld
+
+      - name: SecureMySQLInstallation
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              sudo mysql_secure_installation --set-root-pass "{{resolveSecret 'mysql-root-password'}}" \
+              --remove-anonymous-users \
+              --remove-remote-root \
+              --disable-remote-root \
+              --remove-test-database
+
+      - name: InstallPHPAndExtensions
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf install -y php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath
+            - sudo systemctl enable php-fpm
+            - sudo systemctl start php-fpm
+
+      - name: ConfigurePHP
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              sudo bash -c 'cat >> /etc/php.ini << EOF
+              memory_limit = 128M
+              upload_max_filesize = 64M
+              post_max_size = 64M
+              max_execution_time = 60
+              max_input_vars = 3000
+              date.timezone = UTC
+              EOF'
+
+      - name: ValidateInstallation
+        action: ExecuteBash
+        inputs:
+          commands:
+            - php --version
+            - mysql --version
+            - systemctl status mysqld
+            - systemctl status php-fpm
+
+  - name: test
+    steps:
+      - name: TestPHPMySQL
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              echo "<?php phpinfo(); ?>" | sudo tee /var/www/html/info.php
+            - curl -s localhost/info.php | grep -i "mysql"
+            - sudo rm /var/www/html/info.php
+
+  - name: validate
+    steps:
+      - name: ValidateServices
+        action: ExecuteBash
+        inputs:
+          commands:
+            - systemctl is-active mysqld
+            - systemctl is-active php-fpmname: InstallMySQLPHPComponent
+description: Installs MySQL and PHP on Linux
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: UpdateSystem
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf update -y
+            - sudo dnf upgrade -y
+
+      - name: InstallMySQLServer
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf install -y mysql-server
+            - sudo systemctl enable mysqld
+            - sudo systemctl start mysqld
+
+      - name: SecureMySQLInstallation
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              sudo mysql_secure_installation --set-root-pass "{{resolveSecret 'mysql-root-password'}}" \
+              --remove-anonymous-users \
+              --remove-remote-root \
+              --disable-remote-root \
+              --remove-test-database
+
+      - name: InstallPHPAndExtensions
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sudo dnf install -y php php-cli php-fpm php-json php-common php-mysql php-zip php-gd php-mbstring php-curl php-xml php-pear php-bcmath
+            - sudo systemctl enable php-fpm
+            - sudo systemctl start php-fpm
+
+      - name: ConfigurePHP
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              sudo bash -c 'cat >> /etc/php.ini << EOF
+              memory_limit = 128M
+              upload_max_filesize = 64M
+              post_max_size = 64M
+              max_execution_time = 60
+              max_input_vars = 3000
+              date.timezone = UTC
+              EOF'
+
+      - name: ValidateInstallation
+        action: ExecuteBash
+        inputs:
+          commands:
+            - php --version
+            - mysql --version
+            - systemctl status mysqld
+            - systemctl status php-fpm
+
+  - name: test
+    steps:
+      - name: TestPHPMySQL
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              echo "<?php phpinfo(); ?>" | sudo tee /var/www/html/info.php
+            - curl -s localhost/info.php | grep -i "mysql"
+            - sudo rm /var/www/html/info.php
+
+  - name: validate
+    steps:
+      - name: ValidateServices
+        action: ExecuteBash
+        inputs:
+          commands:
+            - systemctl is-active mysqld
+            - systemctl is-active php-fpm
